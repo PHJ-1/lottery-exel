@@ -173,7 +173,7 @@ html, body {
 .btn.ghost:hover:not(:disabled) { background: rgba(255,255,255,.16); }
 .btn.lg { padding: 14px 32px; font-size: 16px; }
 .btn.block { width: 100%; margin-top: 14px; }
-.row.gap.mt .btn.block { margin-top: 0; }
+.row.gap.mt .btn.block { margin-top: 0; } /* 同一行内两个按钮并排，不额外加顶距 */
 
 .link-btn { background: none; border: none; color: var(--gold); cursor: pointer; font-size: inherit; padding: 0; text-decoration: underline; }
 
@@ -220,6 +220,7 @@ html, body {
   border: 1px solid rgba(245,210,122,.32); border-radius: 10px; padding: 8px 14px;
   font-size: 14px; animation: pop .4s ease;
 }
+/* 结果页中奖名字：默认即呈现醒目的金色牌匾，形如奖项标题 */
 .winner-card.name-gold {
   background: linear-gradient(135deg, #ffe784 0%, #f5c542 55%, #e0a52e 100%);
   color: #2a1a00; font-weight: 800; font-size: 17px; letter-spacing: .5px;
@@ -228,12 +229,14 @@ html, body {
   transition: transform .2s;
 }
 .winner-card.name-gold:hover { transform: translateY(-2px); }
+/* 导出图片/PDF 时临时套用的名字高亮样式：醒目的金色大字号，html2canvas 可正常渲染 */
 .winner-card.export-hl {
   background: linear-gradient(135deg, #ffe784 0%, #f5c542 55%, #e0a52e 100%);
   color: #2a1a00; font-weight: 900; font-size: 21px; letter-spacing: 1px;
   border: 2px solid #fff4cf; border-radius: 14px; padding: 12px 20px;
   box-shadow: 0 8px 28px rgba(245,210,122,.85), inset 0 0 0 2px rgba(255,255,255,.3);
 }
+/* 导出时奖项标题一并亮化为金色，整张榜单更醒目 */
 .result-group.export-hl h4 {
   color: #ffd86b; font-size: 18px; font-weight: 800;
   text-shadow: 0 2px 12px rgba(245,210,122,.5);
