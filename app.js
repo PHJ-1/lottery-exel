@@ -7,7 +7,7 @@ const state = {
     { name: "王者世界周边徽章", count: 1 },
     { name: "王者世界英雄卡", count: 1 },
     { name: "王者世界明信片", count: 1 },
-    { name: "Q币", count: 1 },
+    { name: "Q币10", count: 1 },
   ],
   results: {},      // { 奖项名: [中奖者...] }
   pool: [],         // 当前可抽取池（抽后移除，不重复中奖）
