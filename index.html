@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>社群福利抽奖 · 王者世界</title>
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <div class="bg-orbs">
+    <span class="orb orb-1"></span>
+    <span class="orb orb-2"></span>
+    <span class="orb orb-3"></span>
+  </div>
+
+  <!-- 活动横幅：以世界启程海报为底图 -->
+  <header class="hero">
+    <div class="hero-inner">
+      <h1 class="hero-title">社群福利抽奖</h1>
+      <p class="hero-theme">王者世界</p>
+      <p class="hero-desc">王者荣耀世界社群主题抽奖。</p>
+      <nav class="hero-nav">
+        <a href="./index.html" class="hero-link active">抽奖台</a>
+        <a href="./result.html" class="hero-link">结果页</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <div class="overview">
+      <div class="ov-item"><span class="ov-num" id="ovNames">0</span><span class="ov-label">名单人数</span></div>
+      <div class="ov-item"><span class="ov-num" id="ovPrizes">0</span><span class="ov-label">奖池福利</span></div>
+      <div class="ov-item"><span class="ov-num" id="ovSlots">0</span><span class="ov-label">中奖席位</span></div>
+    </div>
+
+    <div class="grid-2">
+      <!-- 荣耀奖池 -->
+      <section class="card panel" id="step-prizes">
+        <div class="panel-head">
+          <span class="panel-icon">🏆</span>
+          <div>
+            <h2>荣耀奖池</h2>
+            <p class="muted">每周问答奖品配置如下</p>
+          </div>
+        </div>
+        <div id="prizeList" class="prize-list"></div>
+        <div class="row gap mt">
+          <button class="btn ghost block" id="addPrizeBtn">＋ 添加福利</button>
+          <button class="btn primary block" id="savePrizeBtn">💾 保存当前奖池</button>
+        </div>
+      </section>
+
+      <!-- 集结名单 -->
+      <section class="card panel" id="step-upload">
+        <div class="panel-head">
+          <span class="panel-icon">📜</span>
+          <div>
+            <h2>集结名单</h2>
+            <p class="muted">由工作人员后台录入，联系方式已脱敏</p>
+          </div>
+        </div>
+
+        <div class="upload-zone" id="dropZone">
+          <input type="file" id="fileInput" accept=".csv,.xlsx,.xls" hidden="">
+          <div class="upload-icon">📥</div>
+          <p class="upload-title">拖拽文件到此处，或 <button class="link-btn" id="pickBtn">点击选择</button></p>
+          <p class="muted small">CSV 首列将被作为参与人姓名（也可指定列）</p>
+        </div>
+
+        <div class="divider"><span>或粘贴名单</span></div>
+
+        <textarea id="pasteArea" class="paste-area" placeholder="每行一个名字，例如：
+张三
+李四
+王五"></textarea>
+
+        <div class="row between mt">
+          <div class="col">
+            <label class="field-label" for="nameColumn">姓名所在列（CSV 用）</label>
+            <select id="nameColumn" class="select">
+              <option value="0">第 1 列</option>
+              <option value="1">第 2 列</option>
+              <option value="2">第 3 列</option>
+            </select>
+          </div>
+          <div class="row gap">
+            <button class="btn ghost" id="clearNames">清空</button>
+            <button class="btn primary" id="parseBtn">解析名单</button>
+          </div>
+        </div>
+
+        <div class="name-preview" id="namePreview" hidden="">
+          <div class="row between">
+            <strong>已集结 <span id="nameCount" class="badge">0</span> 位伙伴</strong>
+          </div>
+          <div class="chips" id="nameChips"></div>
+        </div>
+      </section>
+    </div>
+
+    <!-- 荣耀榜单 -->
+    <section class="card panel" id="step-draw">
+      <div class="panel-head">
+        <span class="panel-icon">🎖️</span>
+        <div>
+          <h2>荣耀榜单</h2>
+          <p class="muted">开奖后公开展示，联系方式已脱敏</p>
+        </div>
+      </div>
+
+      <div class="draw-stage" id="drawStage">
+        <div class="reel" id="reel">暂未开奖</div>
+        <div class="current-prize" id="currentPrize">开奖后中奖名单会展示在这里</div>
+      </div>
+
+      <div class="row center gap mt">
+        <button class="btn primary lg" id="startDrawBtn" disabled="">🎲 一键开奖</button>
+        <button class="btn ghost lg" id="resetDrawBtn">重置</button>
+      </div>
+
+      <div class="draw-progress" id="drawProgress"></div>
+    </section>
+  </main>
+
+  <!-- 结果分享弹层 -->
+  <div class="modal-mask" id="shareModal" hidden="">
+    <div class="modal">
+      <h3>🎉 开奖完成！</h3>
+      <p class="muted">复制下面的链接分享给同事，打开即可查看抽奖结果页。</p>
+      <div class="share-box">
+        <input id="shareLink" class="share-input" readonly="">
+        <button class="btn primary" id="copyLinkBtn">复制</button>
+      </div>
+      <div class="row center gap mt">
+        <a class="btn ghost" id="openResultBtn" href="./result.html">查看结果页</a>
+        <button class="btn ghost" id="closeShareBtn">关闭</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 编辑中奖者弹层（抽奖台用，用于添加补充中奖者） -->
+  <div class="modal-mask" id="editModal" hidden="">
+    <div class="modal">
+      <h3 id="editModalTitle">编辑</h3>
+      <input type="text" id="editInput" class="share-input" style="width:100%;margin-bottom:16px;">
+      <div class="row center gap">
+        <button class="btn primary" id="editConfirmBtn">确定</button>
+        <button class="btn ghost" id="editCancelBtn">取消</button>
+      </div>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <p>由 <a href="https://with.woa.com/" style="color: #8A2BE2;" target="_blank">With</a> 通过自然语言生成</p>
+  </footer>
+
+  <!-- SheetJS 用于解析 Excel -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="./app.js"></script>
+
+
+</body>
+</html>
