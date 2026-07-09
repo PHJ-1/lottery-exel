@@ -1,6 +1,7 @@
 // 结果展示页逻辑：从 URL hash 读取 base64 抽奖结果，支持编辑与共享历史记录
 (function () {
   const $ = (id) => document.getElementById(id);
+  // 安全的事件绑定：元素不存在时静默跳过，避免静态文件不同步导致 addEventListener 崩溃
   function on(id, type, handler) {
     const el = $(id);
     if (el) el.addEventListener(type, handler);
@@ -20,8 +21,10 @@
     return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   }
 
-  let current = null;
+  // 当前展示的抽奖数据
+  let current = null; // { title, time, results: { 奖项: [名字...] } }
 
+  /* ---------- 读取与渲染当前结果 ---------- */
   function loadFromHash() {
     const hash = location.hash.replace(/^#/, "");
     if (!hash) return null;
@@ -56,6 +59,7 @@
     }
     showExportBar(true);
 
+    // 只读展示：不提供任何编辑控件
     body.innerHTML = groups
       .map((prize) => {
         const winners = current.results[prize] || [];
@@ -71,6 +75,18 @@
       .join("");
   }
 
+  /* ---------- 启动 ---------- */
+  function init() {
+    const data = loadFromHash();
+    if (!data) {
+      $("resultBody").innerHTML = '<p class="muted">未检测到抽奖数据，请返回抽奖台生成结果链接。</p>';
+    } else {
+      renderResult(data);
+    }
+    renderHistory();
+  }
+
+  /* ---------- 历史记录（纯静态：仅本机浏览器保存） ---------- */
   function renderHistory() {
     const wrap = $("historyList");
     let list = [];
@@ -97,11 +113,12 @@
       btn.addEventListener("click", () => {
         const item = list[+btn.dataset.open];
         const target = item && (item.result_url || item.url);
-        if (target) window.location.href = target;
+        if (target) window.location.href = target; // 整页跳转打开对应结果页，确保可点开
       });
     });
   }
 
+  /* ---------- 启动 ---------- */
   function init() {
     const data = loadFromHash();
     if (!data) {
@@ -112,14 +129,17 @@
     renderHistory();
   }
 
+  /* ---------- 导出图片 / PDF ---------- */
   function showExportBar(show) {
     const bar = $("exportBar");
     if (bar) bar.style.display = show ? "flex" : "none";
   }
 
+  // 截取结果榜单区域为 canvas（只截结果卡片，避免把页脚一起截进去）
   async function captureResultCard() {
     const card = document.querySelector(".container .panel:last-child");
     if (!card) throw new Error("未找到结果卡片");
+    // 导出前临时高亮中奖名字与奖项标题，截图后还原，不影响页面正常显示
     const cards = card.querySelectorAll(".winner-card");
     const groups = card.querySelectorAll(".result-group");
     cards.forEach((c) => c.classList.add("export-hl"));
@@ -167,6 +187,7 @@
       const imgData = canvas.toDataURL("image/png");
       const { jsPDF } = window.jspdf;
       const pxW = canvas.width, pxH = canvas.height;
+      // 以像素为单位的 PDF，宽固定为 595pt（约 A4 宽），按比例缩放
       const pdfW = 595;
       const pdfH = (pxH / pxW) * pdfW;
       const pdf = new jsPDF({ orientation: pdfH > pdfW ? "portrait" : "landscape", unit: "pt", format: [pdfW, pdfH] });
