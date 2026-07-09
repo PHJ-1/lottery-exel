@@ -4,9 +4,10 @@
 const state = {
   names: [],        // 参与者姓名数组
   prizes: [         // 奖项配置
-    { name: "一等奖", count: 1 },
-    { name: "二等奖", count: 2 },
-    { name: "三等奖", count: 3 },
+    { name: "王者世界周边徽章", count: 1 },
+    { name: "王者世界英雄卡", count: 1 },
+    { name: "王者世界明信片", count: 1 },
+    { name: "Q币", count: 1 },
   ],
   results: {},      // { 奖项名: [中奖者...] }
   pool: [],         // 当前可抽取池（抽后移除，不重复中奖）
@@ -51,7 +52,7 @@ function base64Decode(str) {
 }
 
 function escapeHtml(s) {
-  return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  return String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 }
 
 /* ---------- 步骤一：解析名单 ---------- */
@@ -135,7 +136,7 @@ function renderPrizes() {
     el.addEventListener("input", (e) => {
       const v = parseInt(e.target.value, 10);
       state.prizes[+e.target.dataset.i].count = isNaN(v) || v < 1 ? 1 : v;
-      renderOverview();
+      renderOverview(); // 名额变化实时同步顶部「中奖席位」，保持与荣耀奖池一致
     });
   });
   list.querySelectorAll("[data-del]").forEach((el) => {
@@ -173,107 +174,21 @@ function drawAll() {
 
 function renderProgress() {
   const wrap = $("drawProgress");
-  const groups = Object.keys(state.results);
+  const groups = Object.keys(state.results); // 使用实际结果顺序，避免与奖项配置错位
   wrap.innerHTML = groups
-    .map((prize, gi) => {
+    .map((prize) => {
       const winners = state.results[prize] || [];
       const cards = winners
-        .map((w, wi) => `<span class="winner-card">🏆 ${escapeHtml(w)}<button class="w-del" data-g="${gi}" data-w="${wi}" title="移除">✕</button></span>`)
+        .map((w) => `<span class="winner-card">🏆 ${escapeHtml(w)}</span>`)
         .join("");
       return `
-        <div class="result-group" data-g="${gi}">
-          <h4>
-            <input class="prize-name-edit" data-g="${gi}" value="${escapeHtml(prize)}" />
-            <span class="muted small">（共 ${winners.length} 名）</span>
-            <button class="prize-add" data-g="${gi}" title="添加中奖者">＋ 添加</button>
-          </h4>
+        <div class="result-group">
+          <h4>${escapeHtml(prize)}<span class="muted small">（共 ${winners.length} 名）</span></h4>
           <div class="winners">${cards || '<span class="muted small">暂无名次</span>'}</div>
         </div>`;
     })
     .join("");
-  bindDrawEditEvents();
 }
-
-// 抽奖台结果榜单的就地编辑（删除 / 改名 / 添加补充中奖者）
-function bindDrawEditEvents() {
-  const wrap = $("drawProgress");
-  wrap.querySelectorAll(".w-del").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const g = +btn.dataset.g, w = +btn.dataset.w;
-      const groups = Object.keys(state.results);
-      state.results[groups[g]].splice(w, 1);
-      renderProgress();
-    });
-  });
-  wrap.querySelectorAll(".prize-name-edit").forEach((inp) => {
-    inp.addEventListener("input", () => {
-      const g = +inp.dataset.g;
-      const groups = Object.keys(state.results);
-      const oldName = groups[g];
-      const newName = inp.value.trim() || oldName;
-      if (newName !== oldName) {
-        state.results[newName] = state.results[oldName];
-        delete state.results[oldName];
-        renderProgress();
-      }
-    });
-  });
-  wrap.querySelectorAll(".prize-add").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const g = +btn.dataset.g;
-      const groups = Object.keys(state.results);
-      openDrawEditModal("添加中奖者", "", (val) => {
-        const name = val.trim();
-        if (name) {
-          state.results[groups[g]].push(name);
-          renderProgress();
-        }
-      });
-    });
-  });
-}
-
-// 抽奖台使用的编辑弹层（添加补充中奖者）
-let drawEditCallback = null;
-function openDrawEditModal(title, value, cb) {
-  $("editModalTitle").textContent = title;
-  $("editInput").value = value;
-  drawEditCallback = cb;
-  $("editModal").hidden = false;
-  setTimeout(() => $("editInput").focus(), 50);
-}
-function closeDrawEditModal() {
-  $("editModal").hidden = true;
-  drawEditCallback = null;
-}
-on("editConfirmBtn", "click", () => {
-  if (drawEditCallback) drawEditCallback($("editInput").value);
-  closeDrawEditModal();
-});
-on("editCancelBtn", "click", closeDrawEditModal);
-on("editInput", "keydown", (e) => {
-  if (e.key === "Enter") $("editConfirmBtn").click();
-});
-
-// 更新结果链接：基于当前已编辑的中奖名单重新生成分享链接
-const regenLinkBtnEl = $("regenLinkBtn");
-if (regenLinkBtnEl) regenLinkBtnEl.addEventListener("click", () => {
-  const payload = {
-    t: "lottery",
-    title: state.lastTitle || "幸运抽奖结果",
-    time: state.lastTime || new Date().toLocaleString("zh-CN"),
-    results: state.results,
-  };
-  const encoded = base64Encode(payload);
-  const url = `${location.origin}${location.pathname.replace(/index\.html$/, "")}result.html#${encoded}`;
-  $("shareLink").value = url;
-  $("openResultBtn").href = `./result.html#${encoded}`;
-  if (location.hash !== "#" + encoded) {
-    location.hash = encoded;
-  }
-  saveToHistory(payload, url);
-  $("shareModal").hidden = false;
-});
 
 function finishDraw() {
   state.drawing = false;
@@ -293,10 +208,10 @@ function finishDraw() {
   $("openResultBtn").href = `./result.html#${encoded}`;
   saveToHistory(payload, url);
   $("shareModal").hidden = false;
-  if ($("drawEditBar")) $("drawEditBar").hidden = false;
 }
 
 // 纯静态（GitHub Pages / 预览）版本：仅保存到本机浏览器
+// 结果通过链接分享，不调用服务端接口，避免无后端时的 404 报错
 async function saveToHistory(payload, url) {
   const record = {
     title: payload.title || "幸运抽奖结果",
@@ -342,7 +257,6 @@ function resetDraw() {
   $("reel").textContent = "暂未开奖";
   $("currentPrize").textContent = "开奖后中奖名单会展示在这里";
   $("drawProgress").innerHTML = "";
-  if ($("drawEditBar")) $("drawEditBar").hidden = true;
   updateStartBtn();
 }
 
@@ -379,10 +293,11 @@ on("addPrizeBtn", "click", () => {
   updateStartBtn();
 });
 
+// 保存当前奖池：将输入框最新值落库到 state，并刷新顶部「中奖席位」保持一致
 on("savePrizeBtn", "click", () => {
-  renderPrizes();
+  renderPrizes();   // 重新读取输入框值并刷新概览
   updateStartBtn();
-  renderOverview();
+  renderOverview(); // 确保「中奖席位」与荣耀奖池总名额一致
   const btn = $("savePrizeBtn");
   const old = btn.textContent;
   btn.textContent = "✅ 已保存";
